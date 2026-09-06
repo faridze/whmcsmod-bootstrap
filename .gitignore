@@ -1,0 +1,4 @@
+# No generated/private files should be committed here.
+*.tmp
+*.key
+private.asc
