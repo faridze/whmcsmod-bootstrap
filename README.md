@@ -7,13 +7,13 @@ This repository intentionally contains only public installation material and aut
 ## Current stable release
 
 ```text
-whmcsmod 0.4.1
+whmcsmod 0.4.3
 ```
 
 Authenticated manager artifact SHA-256:
 
 ```text
-af041a22ca927784383bc5aa75bc11fd2b77db534e5bf10444acdb069d2057f4
+46d23fb8beccf5b64919399729df374e1accedb0f89fc77dfd25e12c5af2dfb3
 ```
 
 ## Production install
@@ -21,13 +21,20 @@ af041a22ca927784383bc5aa75bc11fd2b77db534e5bf10444acdb069d2057f4
 Use the immutable bootstrap commit below. Do **not** replace the commit SHA with `main`.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/6c3810b848f5a8f718364367061285363afc5b2e/install.sh \
+curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/4470487888a6d23602534f059cd4099a92742394/install.sh \
   | sudo bash -s -- \
       --target mywhmcs \
       --whmcs-root /absolute/path/to/whmcs
 ```
 
-If you are already logged in as `root`, use `bash` instead of `sudo bash`.
+If you are already logged in as `root`, use `bash` instead of `sudo bash`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/4470487888a6d23602534f059cd4099a92742394/install.sh \
+  | bash -s -- \
+      --target mywhmcs \
+      --whmcs-root /absolute/path/to/whmcs
+```
 
 Optional overrides are available when auto-detection cannot determine the correct runtime safely:
 
@@ -35,7 +42,7 @@ Optional overrides are available when auto-detection cannot determine the correc
 --php-bin /absolute/path/to/php
 --composer-bin /absolute/path/to/composer
 --whmcs-run-user USER
---version 0.4.1
+--version 0.4.3
 ```
 
 PHP ambiguity intentionally fails instead of selecting the newest installed PHP.
@@ -59,9 +66,11 @@ install.sh
 release-signing-public.asc
 stable.meta
 stable.meta.asc
-releases/0.4.1/release.meta
-releases/0.4.1/release.meta.asc
-releases/0.4.1/whmcsmod-0.4.1.tar.gz
+releases/0.4.1/...
+releases/0.4.2/...
+releases/0.4.3/release.meta
+releases/0.4.3/release.meta.asc
+releases/0.4.3/whmcsmod-0.4.3.tar.gz
 ```
 
 `stable.meta` points only to a stable release. Prereleases are never selected implicitly.
@@ -74,3 +83,5 @@ The bootstrap reports success only after the canonical installer finishes and th
 whmcsmod doctor
 whmcsmod target list
 ```
+
+The repository also runs continuous distribution verification plus an end-to-end test that executes the exact pinned curl command against an ephemeral fake WHMCS installation.
