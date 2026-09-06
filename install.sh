@@ -66,7 +66,7 @@ bootstrap_parse_metadata() {
 bootstrap_verify_archive_layout() {
   local archive="$1" actual expected
   expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/release.sh\nwhmcsmod'
-  actual="$(tar -tzf "$archive" | sed 's#^\./##' | sort)" || return 1
+  actual="$(tar -tzf "$archive" | sed 's#^\./##' | LC_ALL=C sort)" || return 1
   [[ "$actual" == "$expected" ]] || return 1
   if tar -tvzf "$archive" | awk '$1 ~ /^[lh]/ {found=1} END {exit found ? 0 : 1}'; then
     return 1
