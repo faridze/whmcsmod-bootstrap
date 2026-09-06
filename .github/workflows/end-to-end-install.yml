@@ -37,9 +37,9 @@ jobs:
           set -euo pipefail
           [[ -x /usr/local/sbin/whmcsmod ]]
           [[ -f /etc/whmcsmod/keys/release-signing-public.asc ]]
-          grep -Fx 'TRUSTED_TAG_SIGNING_FINGERPRINT=9A3FFFFD9AA2CDA1B825A9F90425CF942B02684C' /etc/whmcsmod/config.conf >/dev/null
-          grep -Fx 'DEFAULT_TARGET=e2e' /etc/whmcsmod/config.conf >/dev/null
-          grep -F 'WHMCS_ROOT=/tmp/whmcsmod-e2e-whmcs' /etc/whmcsmod/targets/e2e.conf >/dev/null
-          grep -F 'WHMCS_RUN_USER=nobody' /etc/whmcsmod/targets/e2e.conf >/dev/null
+          sudo grep -Fx 'TRUSTED_TAG_SIGNING_FINGERPRINT=9A3FFFFD9AA2CDA1B825A9F90425CF942B02684C' /etc/whmcsmod/config.conf >/dev/null
+          sudo grep -Fx 'DEFAULT_TARGET=e2e' /etc/whmcsmod/config.conf >/dev/null
+          sudo grep -F 'WHMCS_ROOT=/tmp/whmcsmod-e2e-whmcs' /etc/whmcsmod/targets/e2e.conf >/dev/null
+          sudo grep -F 'WHMCS_RUN_USER=nobody' /etc/whmcsmod/targets/e2e.conf >/dev/null
           sudo /usr/local/sbin/whmcsmod doctor
           sudo /usr/local/sbin/whmcsmod target list
