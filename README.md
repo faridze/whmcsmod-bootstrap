@@ -10,6 +10,8 @@ This repository intentionally contains only public installation material and aut
 whmcsmod 0.4.4
 ```
 
+When `--version` is omitted, this stable release is selected from the signed `stable.meta` metadata.
+
 Authenticated manager artifact SHA-256:
 
 ```text
