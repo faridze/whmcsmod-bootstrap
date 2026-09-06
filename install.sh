@@ -165,6 +165,7 @@ bootstrap_main() {
   echo "Public key:  /etc/whmcsmod/keys/release-signing-public.asc"
 }
 
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+bootstrap_source="${BASH_SOURCE[0]-}"
+if [[ -z "$bootstrap_source" || "$bootstrap_source" == "$0" ]]; then
   bootstrap_main "$@"
 fi
