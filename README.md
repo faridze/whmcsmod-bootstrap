@@ -21,7 +21,7 @@ Authenticated manager artifact SHA-256:
 Use the immutable bootstrap commit below. Do **not** replace the commit SHA with `main`.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/4470487888a6d23602534f059cd4099a92742394/install.sh \
+curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/acb24f6fa43d772273277ff1572be0051cd119ff/install.sh \
   | sudo bash -s -- \
       --target mywhmcs \
       --whmcs-root /absolute/path/to/whmcs
@@ -30,7 +30,7 @@ curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/44704878
 If you are already logged in as `root`, use `bash` instead of `sudo bash`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/4470487888a6d23602534f059cd4099a92742394/install.sh \
+curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/acb24f6fa43d772273277ff1572be0051cd119ff/install.sh \
   | bash -s -- \
       --target mywhmcs \
       --whmcs-root /absolute/path/to/whmcs
@@ -56,6 +56,8 @@ The bootstrap installer pins the release-signing primary fingerprint:
 ```
 
 The downloaded public key is accepted only if it contains exactly that primary fingerprint. `stable.meta` is detached-signed with the same key and contains the SHA-256 of the manager bundle. The bootstrap verifies the metadata signature and `VALIDSIG` fingerprint before trusting the version/hash, then verifies the bundle SHA-256 and its strict file allow-list before executing the canonical manager installer.
+
+Archive file-name comparison is pinned to `LC_ALL=C`, so valid signed artifacts are not rejected because of host locale collation differences.
 
 The private signing key exists only in the private manager repository's GitHub Actions secret and is never distributed to WHMCS servers.
 
