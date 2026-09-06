@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/6dade874fb0216d4a3e12e1101d6404b5c888c9a/install.sh \
+          curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/4470487888a6d23602534f059cd4099a92742394/install.sh \
             | sudo bash -s -- \
                 --target e2e \
                 --whmcs-root /tmp/whmcsmod-e2e-whmcs
