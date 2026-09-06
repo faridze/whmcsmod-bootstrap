@@ -3,6 +3,14 @@ set -euo pipefail
 
 EXPECTED_SIGNING_FINGERPRINT="9A3FFFFD9AA2CDA1B825A9F90425CF942B02684C"
 DEFAULT_DISTRIBUTION_BASE_URL="https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/main"
+BOOTSTRAP_TEMP_DIR=""
+
+bootstrap_cleanup() {
+  if [[ -n "${BOOTSTRAP_TEMP_DIR:-}" ]]; then
+    rm -rf -- "$BOOTSTRAP_TEMP_DIR"
+    BOOTSTRAP_TEMP_DIR=""
+  fi
+}
 
 bootstrap_die() { echo "whmcsmod-bootstrap: ERROR: $*" >&2; exit 1; }
 bootstrap_need() { command -v "$1" >/dev/null 2>&1 || bootstrap_die "required command not found: $1"; }
@@ -111,7 +119,8 @@ bootstrap_main() {
 
   local temp gpg_home public_key metadata metadata_sig artifact release_dir metadata_url artifact_url actual_sha
   temp="$(mktemp -d /tmp/whmcsmod-bootstrap.XXXXXX)"
-  trap 'rm -rf -- "$temp"' EXIT
+  BOOTSTRAP_TEMP_DIR="$temp"
+  trap bootstrap_cleanup EXIT
   gpg_home="$temp/gnupg"
   mkdir -m 0700 "$gpg_home"
   public_key="$temp/release-signing-public.asc"
