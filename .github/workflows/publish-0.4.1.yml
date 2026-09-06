@@ -1,0 +1,73 @@
+name: Publish whmcsmod 0.4.1
+
+on:
+  push:
+    branches:
+      - publish/0.4.1
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout public main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fetch one-time authenticated export
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL 'https://sdmntprpolandcentral.oaiusercontent.com/files/00000000-d734-820a-acd1-0e550599c872/raw?se=2026-09-06T20%3A49%3A42Z&sp=r&sv=2026-02-06&sr=b&scid=f5516f6f-b2b9-57da-b2d2-d0ceb8965fea&skoid=a4604a88-85e4-4562-b6ab-a5622268de80&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-06T08%3A03%3A38Z&ske=2026-09-07T08%3A03%3A38Z&sks=b&skv=2026-02-06&sig=1ZVG1zE2Fl5zr3F9cCj%2Bi01f2pO3QCjPAKkPTF5aHmI%3D' -o "$RUNNER_TEMP/payload.zip"
+          mkdir -p "$RUNNER_TEMP/payload"
+          unzip -q "$RUNNER_TEMP/payload.zip" -d "$RUNNER_TEMP/payload"
+
+      - name: Verify publication payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          d="$RUNNER_TEMP/payload"
+          expected_fpr='9A3FFFFD9AA2CDA1B825A9F90425CF942B02684C'
+          expected_sha='af041a22ca927784383bc5aa75bc11fd2b77db534e5bf10444acdb069d2057f4'
+          [[ -f "$d/bootstrap-install.sh" && -f "$d/release-signing-public.asc" && -f "$d/release.meta" && -f "$d/release.meta.asc" && -f "$d/whmcsmod-0.4.1.tar.gz" ]]
+          [[ "$(sha256sum "$d/whmcsmod-0.4.1.tar.gz" | awk '{print $1}')" == "$expected_sha" ]]
+          grep -Fx 'version=0.4.1' "$d/release.meta" >/dev/null
+          grep -Fx "sha256=$expected_sha" "$d/release.meta" >/dev/null
+          ghome="$(mktemp -d)"
+          chmod 700 "$ghome"
+          GNUPGHOME="$ghome" gpg --batch --import "$d/release-signing-public.asc" >/dev/null 2>&1
+          fpr="$(GNUPGHOME="$ghome" gpg --batch --with-colons --list-keys 2>/dev/null | awk -F: '$1=="pub"{want=1;next} want&&$1=="fpr"{print toupper($10);exit}')"
+          [[ "$fpr" == "$expected_fpr" ]]
+          status="$(GNUPGHOME="$ghome" gpg --batch --status-fd=1 --verify "$d/release.meta.asc" "$d/release.meta" 2>/dev/null)"
+          valid="$(printf '%s\n' "$status" | awk '/^\[GNUPG:\] VALIDSIG /{print toupper($3);exit}')"
+          [[ "$valid" == "$expected_fpr" ]]
+          bash -n "$d/bootstrap-install.sh"
+          mapfile -t entries < <(tar -tzf "$d/whmcsmod-0.4.1.tar.gz" | sort)
+          expected=(VERSION install.sh lib/commands.sh lib/common.sh lib/deploy.sh lib/install-detect.sh lib/manifest.php lib/release.sh whmcsmod)
+          [[ "${entries[*]}" == "${expected[*]}" ]]
+          ! grep -R -n -E 'BEGIN PGP PRIVATE KEY BLOCK|WHMCSMOD_GPG_PRIVATE_KEY=' "$d" >/dev/null
+          rm -rf "$ghome"
+
+      - name: Publish files atomically to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          d="$RUNNER_TEMP/payload"
+          install -m 0755 "$d/bootstrap-install.sh" install.sh
+          install -m 0644 "$d/release-signing-public.asc" release-signing-public.asc
+          install -m 0644 "$d/release.meta" stable.meta
+          install -m 0644 "$d/release.meta.asc" stable.meta.asc
+          mkdir -p releases/0.4.1
+          install -m 0644 "$d/release.meta" releases/0.4.1/release.meta
+          install -m 0644 "$d/release.meta.asc" releases/0.4.1/release.meta.asc
+          install -m 0644 "$d/whmcsmod-0.4.1.tar.gz" releases/0.4.1/whmcsmod-0.4.1.tar.gz
+          git config user.name 'whmcsmod distribution bot'
+          git config user.email 'whmcsmod-distribution@users.noreply.github.com'
+          git add install.sh release-signing-public.asc stable.meta stable.meta.asc releases/0.4.1
+          git diff --cached --check
+          git commit -m 'Publish authenticated whmcsmod 0.4.1 distribution'
+          git push origin HEAD:main
