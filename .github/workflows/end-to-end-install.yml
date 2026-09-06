@@ -1,0 +1,45 @@
+name: End-to-end bootstrap install
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare fake WHMCS root
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo install -d -m 0755 /tmp/whmcsmod-e2e-whmcs
+          printf '%s\n' '<?php // bootstrap e2e fixture' | sudo tee /tmp/whmcsmod-e2e-whmcs/init.php >/dev/null
+          sudo chown nobody:nogroup /tmp/whmcsmod-e2e-whmcs/init.php
+          sudo chmod 0644 /tmp/whmcsmod-e2e-whmcs/init.php
+
+      - name: Run exact pinned production bootstrap
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/6c3810b848f5a8f718364367061285363afc5b2e/install.sh \
+            | sudo bash -s -- \
+                --target e2e \
+                --whmcs-root /tmp/whmcsmod-e2e-whmcs
+
+      - name: Verify installed manager
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ -x /usr/local/sbin/whmcsmod ]]
+          [[ -f /etc/whmcsmod/keys/release-signing-public.asc ]]
+          grep -Fx 'TRUSTED_TAG_SIGNING_FINGERPRINT=9A3FFFFD9AA2CDA1B825A9F90425CF942B02684C' /etc/whmcsmod/config.conf >/dev/null
+          grep -Fx 'DEFAULT_TARGET=e2e' /etc/whmcsmod/config.conf >/dev/null
+          grep -F 'WHMCS_ROOT=/tmp/whmcsmod-e2e-whmcs' /etc/whmcsmod/targets/e2e.conf >/dev/null
+          grep -F 'WHMCS_RUN_USER=nobody' /etc/whmcsmod/targets/e2e.conf >/dev/null
+          sudo /usr/local/sbin/whmcsmod doctor
+          sudo /usr/local/sbin/whmcsmod target list
