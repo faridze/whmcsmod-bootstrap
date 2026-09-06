@@ -7,13 +7,13 @@ This repository intentionally contains only public installation material and aut
 ## Current stable release
 
 ```text
-whmcsmod 0.4.3
+whmcsmod 0.4.4
 ```
 
 Authenticated manager artifact SHA-256:
 
 ```text
-46d23fb8beccf5b64919399729df374e1accedb0f89fc77dfd25e12c5af2dfb3
+7891de11040292d43ac316c7d294affc20f9bdd170dca819bfb4ff69cf1ff47d
 ```
 
 ## Production install
@@ -42,7 +42,7 @@ Optional overrides are available when auto-detection cannot determine the correc
 --php-bin /absolute/path/to/php
 --composer-bin /absolute/path/to/composer
 --whmcs-run-user USER
---version 0.4.3
+--version 0.4.4
 ```
 
 PHP ambiguity intentionally fails instead of selecting the newest installed PHP.
@@ -73,6 +73,9 @@ releases/0.4.2/...
 releases/0.4.3/release.meta
 releases/0.4.3/release.meta.asc
 releases/0.4.3/whmcsmod-0.4.3.tar.gz
+releases/0.4.4/release.meta
+releases/0.4.4/release.meta.asc
+releases/0.4.4/whmcsmod-0.4.4.tar.gz
 ```
 
 `stable.meta` points only to a stable release. Prereleases are never selected implicitly.
