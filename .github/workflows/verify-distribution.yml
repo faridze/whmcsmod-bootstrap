@@ -1,0 +1,72 @@
+name: Verify bootstrap distribution
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify bootstrap and authenticated stable release
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_fpr='9A3FFFFD9AA2CDA1B825A9F90425CF942B02684C'
+
+          bash -n install.sh
+          grep -F "EXPECTED_SIGNING_FINGERPRINT=\"$expected_fpr\"" install.sh >/dev/null
+          grep -F 'DEFAULT_DISTRIBUTION_BASE_URL="https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/main"' install.sh >/dev/null
+
+          ghome="$(mktemp -d)"
+          trap 'rm -rf -- "$ghome"' EXIT
+          chmod 700 "$ghome"
+          GNUPGHOME="$ghome" gpg --batch --import release-signing-public.asc >/dev/null 2>&1
+          mapfile -t fingerprints < <(
+            GNUPGHOME="$ghome" gpg --batch --with-colons --list-keys 2>/dev/null \
+              | awk -F: '$1=="pub"{want=1;next} want&&$1=="fpr"{print toupper($10);want=0}'
+          )
+          [[ ${#fingerprints[@]} -eq 1 ]]
+          [[ "${fingerprints[0]}" == "$expected_fpr" ]]
+
+          status="$(GNUPGHOME="$ghome" gpg --batch --status-fd=1 --verify stable.meta.asc stable.meta 2>/dev/null)"
+          valid="$(printf '%s\n' "$status" | awk '/^\[GNUPG:\] VALIDSIG /{print toupper($3);exit}')"
+          [[ "$valid" == "$expected_fpr" ]]
+
+          version="$(awk -F= '$1=="version"{print $2}' stable.meta)"
+          sha="$(awk -F= '$1=="sha256"{print tolower($2)}' stable.meta)"
+          [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          [[ "$sha" =~ ^[a-f0-9]{64}$ ]]
+          [[ "$(grep -c '^version=' stable.meta)" -eq 1 ]]
+          [[ "$(grep -c '^sha256=' stable.meta)" -eq 1 ]]
+          [[ "$(wc -l < stable.meta)" -eq 2 ]]
+
+          release_dir="releases/$version"
+          artifact="$release_dir/whmcsmod-$version.tar.gz"
+          [[ -f "$release_dir/release.meta" && -f "$release_dir/release.meta.asc" && -f "$artifact" ]]
+          cmp -s stable.meta "$release_dir/release.meta"
+          cmp -s stable.meta.asc "$release_dir/release.meta.asc"
+          [[ "$(sha256sum "$artifact" | awk '{print $1}')" == "$sha" ]]
+
+          expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/release.sh\nwhmcsmod'
+          actual="$(tar -tzf "$artifact" | sed 's#^\./##' | sort)"
+          [[ "$actual" == "$expected" ]]
+          if tar -tvzf "$artifact" | awk '$1 ~ /^[lh]/ {found=1} END {exit found ? 0 : 1}'; then
+            echo 'Archive contains a symlink or hardlink' >&2
+            exit 1
+          fi
+
+          ! grep -R -n -E 'BEGIN PGP PRIVATE KEY BLOCK|WHMCSMOD_GPG_PRIVATE_KEY=' \
+            --exclude-dir=.git . >/dev/null
+
+          echo "Verified whmcsmod $version"
+          echo "SHA-256: $sha"
+          echo "VALIDSIG: $valid"
