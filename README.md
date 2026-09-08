@@ -25,7 +25,7 @@ Version 0.4.6 adds first-class repository onboarding commands (`whmcsmod repo ad
 Use the immutable bootstrap commit below. Do **not** replace the commit SHA with `main`.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/acb24f6fa43d772273277ff1572be0051cd119ff/install.sh \
+curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/e4d7532c3b82e7c8ce16d1717161986452c56424/install.sh \
   | sudo bash -s -- \
       --target mywhmcs \
       --whmcs-root /absolute/path/to/whmcs
@@ -34,7 +34,7 @@ curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/acb24f6f
 If you are already logged in as `root`, use `bash` instead of `sudo bash`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/acb24f6fa43d772273277ff1572be0051cd119ff/install.sh \
+curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/e4d7532c3b82e7c8ce16d1717161986452c56424/install.sh \
   | bash -s -- \
       --target mywhmcs \
       --whmcs-root /absolute/path/to/whmcs
