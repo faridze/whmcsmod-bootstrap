@@ -56,8 +56,8 @@ jobs:
           cmp -s stable.meta.asc "$release_dir/release.meta.asc"
           [[ "$(sha256sum "$artifact" | awk '{print $1}')" == "$sha" ]]
 
-          expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/release.sh\nwhmcsmod'
-          actual="$(tar -tzf "$artifact" | sed 's#^\./##' | sort)"
+          expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/release.sh\nlib/repo.sh\nwhmcsmod'
+          actual="$(tar -tzf "$artifact" | sed 's#^\./##' | LC_ALL=C sort)"
           [[ "$actual" == "$expected" ]]
           if tar -tvzf "$artifact" | awk '$1 ~ /^[lh]/ {found=1} END {exit found ? 0 : 1}'; then
             echo 'Archive contains a symlink or hardlink' >&2
