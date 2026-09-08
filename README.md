@@ -18,6 +18,8 @@ Authenticated manager artifact SHA-256:
 39342cb085e7504a80cc24e3c288d186d20803240c4e08e63b1c752eb09b558e
 ```
 
+Version 0.4.6 adds first-class repository onboarding commands (`whmcsmod repo add/list/status/refresh/remove`). Repository onboarding remains separate from WHMCS deployment and does not deploy module files by itself.
+
 ## Production install
 
 Use the immutable bootstrap commit below. Do **not** replace the commit SHA with `main`.
