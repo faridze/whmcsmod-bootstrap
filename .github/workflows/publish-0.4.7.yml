@@ -80,6 +80,8 @@ jobs:
           s = s.replace('--version 0.4.6', '--version 0.4.7', 1)
           if 'Version 0.4.7 adds authenticated `whmcsmod self-update`' not in s:
               marker = 'Version 0.4.6 adds first-class repository onboarding commands (`whmcsmod repo add/list/status/refresh/remove`). Repository onboarding remains separate from WHMCS deployment and does not deploy module files by itself.\n'
+              if marker not in s:
+                  raise SystemExit('README 0.4.6 feature anchor missing')
               s = s.replace(marker, marker + '\nVersion 0.4.7 adds authenticated `whmcsmod self-update` and `whmcsmod self-update --check`, using signed release metadata, the pinned release fingerprint, and artifact SHA-256 verification.\n', 1)
           needle = 'releases/0.4.6/whmcsmod-0.4.6.tar.gz\n'
           repl = needle + 'releases/0.4.7/release.meta\nreleases/0.4.7/release.meta.asc\nreleases/0.4.7/whmcsmod-0.4.7.tar.gz\n'
@@ -88,20 +90,10 @@ jobs:
           if 'releases/0.4.7/whmcsmod-0.4.7.tar.gz' not in s:
               s = s.replace(needle, repl, 1)
           p.write_text(s)
-
-          p = Path('.github/workflows/verify-distribution.yml')
-          s = p.read_text()
-          old = "expected=$'VERSION\\ninstall.sh\\nlib/commands.sh\\nlib/common.sh\\nlib/deploy.sh\\nlib/install-detect.sh\\nlib/manifest.php\\nlib/release.sh\\nlib/repo.sh\\nwhmcsmod'"
-          new = "expected=$'VERSION\\ninstall.sh\\nlib/commands.sh\\nlib/common.sh\\nlib/deploy.sh\\nlib/install-detect.sh\\nlib/manifest.php\\nlib/release.sh\\nlib/repo.sh\\nlib/self-update.sh\\nwhmcsmod'"
-          if old not in s and new not in s:
-              raise SystemExit('distribution verification allow-list anchor missing')
-          s = s.replace(old, new, 1)
-          s = s.replace("if tar -tvzf \"$artifact\" | awk '$1 ~ /^[lh]/ {found=1} END {exit found ? 0 : 1}'; then", "if tar -tvzf \"$artifact\" | awk '$1 !~ /^-/ {found=1} END {exit found ? 0 : 1}'; then")
-          p.write_text(s)
           PY
           git config user.name 'whmcsmod distribution bot'
           git config user.email 'whmcsmod-distribution@users.noreply.github.com'
-          git add install.sh release-signing-public.asc stable.meta stable.meta.asc releases/0.4.7 README.md .github/workflows/verify-distribution.yml
+          git add install.sh release-signing-public.asc stable.meta stable.meta.asc releases/0.4.7 README.md
           git diff --cached --check
           git commit -m 'Publish authenticated whmcsmod 0.4.7 distribution'
           git push origin HEAD:main
