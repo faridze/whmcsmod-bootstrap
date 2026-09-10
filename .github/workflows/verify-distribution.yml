@@ -63,6 +63,9 @@ jobs:
             0.4.7)
               expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/release.sh\nlib/repo.sh\nlib/self-update.sh\nwhmcsmod'
               ;;
+            0.5.0)
+              expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/ops.sh\nlib/release.sh\nlib/repo.sh\nlib/self-update.sh\nwhmcsmod'
+              ;;
             *)
               echo "No audited distribution layout registered for stable version $version" >&2
               exit 1
