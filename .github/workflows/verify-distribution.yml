@@ -56,11 +56,22 @@ jobs:
           cmp -s stable.meta.asc "$release_dir/release.meta.asc"
           [[ "$(sha256sum "$artifact" | awk '{print $1}')" == "$sha" ]]
 
-          expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/release.sh\nlib/repo.sh\nwhmcsmod'
+          case "$version" in
+            0.4.6)
+              expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/release.sh\nlib/repo.sh\nwhmcsmod'
+              ;;
+            0.4.7)
+              expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/release.sh\nlib/repo.sh\nlib/self-update.sh\nwhmcsmod'
+              ;;
+            *)
+              echo "No audited distribution layout registered for stable version $version" >&2
+              exit 1
+              ;;
+          esac
           actual="$(tar -tzf "$artifact" | sed 's#^\./##' | LC_ALL=C sort)"
           [[ "$actual" == "$expected" ]]
-          if tar -tvzf "$artifact" | awk '$1 ~ /^[lh]/ {found=1} END {exit found ? 0 : 1}'; then
-            echo 'Archive contains a symlink or hardlink' >&2
+          if tar -tvzf "$artifact" | awk '$1 !~ /^-/ {found=1} END {exit found ? 0 : 1}'; then
+            echo 'Archive contains a non-regular entry' >&2
             exit 1
           fi
 
