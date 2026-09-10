@@ -47,7 +47,23 @@ jobs:
           sudo grep -F 'WHMCS_RUN_USER=nobody' /etc/whmcsmod/targets/e2e.conf >/dev/null
           sudo /usr/local/sbin/whmcsmod doctor
           sudo /usr/local/sbin/whmcsmod target list
-          sudo /usr/local/sbin/whmcsmod self-update --check | tee /tmp/whmcsmod-self-update-check.out
+
+          # stable.meta and its detached signature are two mutable raw GitHub files.
+          # Immediately after publication different CDN edges can briefly expose a
+          # mismatched pair. Retry the complete authenticated check; never bypass
+          # signature validation and never trust a failed attempt.
+          : > /tmp/whmcsmod-self-update-check.out
+          ok=0
+          for attempt in 1 2 3; do
+            if sudo /usr/local/sbin/whmcsmod self-update --check > /tmp/whmcsmod-self-update-check.out 2>&1; then
+              ok=1
+              break
+            fi
+            cat /tmp/whmcsmod-self-update-check.out >&2
+            (( attempt < 3 )) && sleep 2
+          done
+          [[ "$ok" -eq 1 ]]
+          cat /tmp/whmcsmod-self-update-check.out
           grep -F 'Current: 0.5.0' /tmp/whmcsmod-self-update-check.out >/dev/null
           grep -F 'Latest:  0.5.0' /tmp/whmcsmod-self-update-check.out >/dev/null
           grep -F 'whmcsmod is already up to date.' /tmp/whmcsmod-self-update-check.out >/dev/null
