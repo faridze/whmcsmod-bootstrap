@@ -7,7 +7,7 @@ This repository intentionally contains only public installation material and aut
 ## Current stable release
 
 ```text
-whmcsmod 0.4.6
+whmcsmod 0.4.7
 ```
 
 When `--version` is omitted, this stable release is selected from the signed `stable.meta` metadata.
@@ -15,10 +15,12 @@ When `--version` is omitted, this stable release is selected from the signed `st
 Authenticated manager artifact SHA-256:
 
 ```text
-39342cb085e7504a80cc24e3c288d186d20803240c4e08e63b1c752eb09b558e
+ed342648e66f6599ed3ac763f2e39fbbf95d1575dcbc6d5dedc9b7c75149ae38
 ```
 
 Version 0.4.6 adds first-class repository onboarding commands (`whmcsmod repo add/list/status/refresh/remove`). Repository onboarding remains separate from WHMCS deployment and does not deploy module files by itself.
+
+Version 0.4.7 adds authenticated `whmcsmod self-update` and `whmcsmod self-update --check`, using signed release metadata, the pinned release fingerprint, and artifact SHA-256 verification.
 
 ## Production install
 
@@ -46,7 +48,7 @@ Optional overrides are available when auto-detection cannot determine the correc
 --php-bin /absolute/path/to/php
 --composer-bin /absolute/path/to/composer
 --whmcs-run-user USER
---version 0.4.6
+--version 0.4.7
 ```
 
 PHP ambiguity intentionally fails instead of selecting the newest installed PHP.
@@ -86,6 +88,9 @@ releases/0.4.5/whmcsmod-0.4.5.tar.gz
 releases/0.4.6/release.meta
 releases/0.4.6/release.meta.asc
 releases/0.4.6/whmcsmod-0.4.6.tar.gz
+releases/0.4.7/release.meta
+releases/0.4.7/release.meta.asc
+releases/0.4.7/whmcsmod-0.4.7.tar.gz
 ```
 
 `stable.meta` points only to a stable release. Prereleases are never selected implicitly.
