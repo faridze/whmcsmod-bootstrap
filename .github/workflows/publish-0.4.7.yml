@@ -1,0 +1,107 @@
+name: Publish whmcsmod 0.4.7
+
+on:
+  push:
+    branches:
+      - publish/0.4.7
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout public main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fetch authenticated export
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL 'https://sdmntpritalynorth.oaiusercontent.com/files/00000000-7cec-8246-8810-6d97cb64dd19/raw?se=2026-09-10T12%3A32%3A39Z&sp=r&sv=2026-02-06&sr=b&scid=59be6668-71c2-5026-ba32-e205fe904df6&skoid=a4604a88-85e4-4562-b6ab-a5622268de80&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-10T09%3A14%3A10Z&ske=2026-09-11T09%3A14%3A10Z&sks=b&skv=2026-02-06&sig=NwmDjvpFEzDE8oKK0B%2B5RfY8sUAh1UWKCU%2B%2Boz7DFX0%3D' -o "$RUNNER_TEMP/payload.zip"
+          mkdir -p "$RUNNER_TEMP/payload"
+          unzip -q "$RUNNER_TEMP/payload.zip" -d "$RUNNER_TEMP/payload"
+
+      - name: Verify publication payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          d="$RUNNER_TEMP/payload"
+          expected_fpr='9A3FFFFD9AA2CDA1B825A9F90425CF942B02684C'
+          expected_sha='ed342648e66f6599ed3ac763f2e39fbbf95d1575dcbc6d5dedc9b7c75149ae38'
+          [[ -f "$d/bootstrap-install.sh" && -f "$d/release-signing-public.asc" && -f "$d/release.meta" && -f "$d/release.meta.asc" && -f "$d/whmcsmod-0.4.7.tar.gz" ]]
+          [[ "$(sha256sum "$d/whmcsmod-0.4.7.tar.gz" | awk '{print $1}')" == "$expected_sha" ]]
+          grep -Fx 'version=0.4.7' "$d/release.meta" >/dev/null
+          grep -Fx "sha256=$expected_sha" "$d/release.meta" >/dev/null
+          grep -F 'BOOTSTRAP_TEMP_DIR=""' "$d/bootstrap-install.sh" >/dev/null
+          grep -F 'trap bootstrap_cleanup EXIT' "$d/bootstrap-install.sh" >/dev/null
+          ghome="$(mktemp -d)"
+          chmod 700 "$ghome"
+          GNUPGHOME="$ghome" gpg --batch --import "$d/release-signing-public.asc" >/dev/null 2>&1
+          fpr="$(GNUPGHOME="$ghome" gpg --batch --with-colons --list-keys 2>/dev/null | awk -F: '$1=="pub"{want=1;next} want&&$1=="fpr"{print toupper($10);exit}')"
+          [[ "$fpr" == "$expected_fpr" ]]
+          status="$(GNUPGHOME="$ghome" gpg --batch --status-fd=1 --verify "$d/release.meta.asc" "$d/release.meta" 2>/dev/null)"
+          valid="$(printf '%s\n' "$status" | awk '/^\[GNUPG:\] VALIDSIG /{print toupper($3);exit}')"
+          [[ "$valid" == "$expected_fpr" ]]
+          bash -n "$d/bootstrap-install.sh"
+          expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/release.sh\nlib/repo.sh\nlib/self-update.sh\nwhmcsmod'
+          actual="$(tar -tzf "$d/whmcsmod-0.4.7.tar.gz" | sed 's#^\./##' | LC_ALL=C sort)"
+          [[ "$actual" == "$expected" ]]
+          if tar -tvzf "$d/whmcsmod-0.4.7.tar.gz" | awk '$1 !~ /^-/ {found=1} END {exit found ? 0 : 1}'; then
+            echo 'Archive contains a non-regular entry' >&2
+            exit 1
+          fi
+          ! grep -R -n -E 'BEGIN PGP PRIVATE KEY BLOCK|WHMCSMOD_GPG_PRIVATE_KEY=' "$d" >/dev/null
+          rm -rf "$ghome"
+
+      - name: Publish stable 0.4.7 atomically
+        shell: bash
+        run: |
+          set -euo pipefail
+          d="$RUNNER_TEMP/payload"
+          install -m 0755 "$d/bootstrap-install.sh" install.sh
+          install -m 0644 "$d/release-signing-public.asc" release-signing-public.asc
+          install -m 0644 "$d/release.meta" stable.meta
+          install -m 0644 "$d/release.meta.asc" stable.meta.asc
+          mkdir -p releases/0.4.7
+          install -m 0644 "$d/release.meta" releases/0.4.7/release.meta
+          install -m 0644 "$d/release.meta.asc" releases/0.4.7/release.meta.asc
+          install -m 0644 "$d/whmcsmod-0.4.7.tar.gz" releases/0.4.7/whmcsmod-0.4.7.tar.gz
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('README.md')
+          s = p.read_text()
+          s = s.replace('whmcsmod 0.4.6', 'whmcsmod 0.4.7', 1)
+          s = s.replace('39342cb085e7504a80cc24e3c288d186d20803240c4e08e63b1c752eb09b558e', 'ed342648e66f6599ed3ac763f2e39fbbf95d1575dcbc6d5dedc9b7c75149ae38', 1)
+          s = s.replace('--version 0.4.6', '--version 0.4.7', 1)
+          if 'Version 0.4.7 adds authenticated `whmcsmod self-update`' not in s:
+              marker = 'Version 0.4.6 adds first-class repository onboarding commands (`whmcsmod repo add/list/status/refresh/remove`). Repository onboarding remains separate from WHMCS deployment and does not deploy module files by itself.\n'
+              s = s.replace(marker, marker + '\nVersion 0.4.7 adds authenticated `whmcsmod self-update` and `whmcsmod self-update --check`, using signed release metadata, the pinned release fingerprint, and artifact SHA-256 verification.\n', 1)
+          needle = 'releases/0.4.6/whmcsmod-0.4.6.tar.gz\n'
+          repl = needle + 'releases/0.4.7/release.meta\nreleases/0.4.7/release.meta.asc\nreleases/0.4.7/whmcsmod-0.4.7.tar.gz\n'
+          if needle not in s:
+              raise SystemExit('README release layout anchor missing')
+          if 'releases/0.4.7/whmcsmod-0.4.7.tar.gz' not in s:
+              s = s.replace(needle, repl, 1)
+          p.write_text(s)
+
+          p = Path('.github/workflows/verify-distribution.yml')
+          s = p.read_text()
+          old = "expected=$'VERSION\\ninstall.sh\\nlib/commands.sh\\nlib/common.sh\\nlib/deploy.sh\\nlib/install-detect.sh\\nlib/manifest.php\\nlib/release.sh\\nlib/repo.sh\\nwhmcsmod'"
+          new = "expected=$'VERSION\\ninstall.sh\\nlib/commands.sh\\nlib/common.sh\\nlib/deploy.sh\\nlib/install-detect.sh\\nlib/manifest.php\\nlib/release.sh\\nlib/repo.sh\\nlib/self-update.sh\\nwhmcsmod'"
+          if old not in s and new not in s:
+              raise SystemExit('distribution verification allow-list anchor missing')
+          s = s.replace(old, new, 1)
+          s = s.replace("if tar -tvzf \"$artifact\" | awk '$1 ~ /^[lh]/ {found=1} END {exit found ? 0 : 1}'; then", "if tar -tvzf \"$artifact\" | awk '$1 !~ /^-/ {found=1} END {exit found ? 0 : 1}'; then")
+          p.write_text(s)
+          PY
+          git config user.name 'whmcsmod distribution bot'
+          git config user.email 'whmcsmod-distribution@users.noreply.github.com'
+          git add install.sh release-signing-public.asc stable.meta stable.meta.asc releases/0.4.7 README.md .github/workflows/verify-distribution.yml
+          git diff --cached --check
+          git commit -m 'Publish authenticated whmcsmod 0.4.7 distribution'
+          git push origin HEAD:main
