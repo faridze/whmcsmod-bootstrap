@@ -30,11 +30,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p releases/0.5.0
-          cat .publish-tmp/0.5.0/part00 .publish-tmp/0.5.0/part01 .publish-tmp/0.5.0/part02 .publish-tmp/0.5.0/part03 .publish-tmp/0.5.0/part04 \
+          cat .publish-tmp/0.5.0/part00 .publish-tmp/0.5.0/part01 .publish-tmp/0.5.0/part02 .publish-tmp/0.5.0/part03a .publish-tmp/0.5.0/part03b .publish-tmp/0.5.0/part04 \
             | base64 -d > releases/0.5.0/whmcsmod-0.5.0.tar.gz
 
           expected_sha='16a633dc040a79f0abdc3c085638bc6d58e7c570d5ddd1781a238c912d1143c4'
           actual_sha="$(sha256sum releases/0.5.0/whmcsmod-0.5.0.tar.gz | awk '{print $1}')"
+          echo "artifact sha256: $actual_sha"
           [[ "$actual_sha" == "$expected_sha" ]]
           grep -Fx "version=0.5.0" releases/0.5.0/release.meta >/dev/null
           grep -Fx "sha256=$expected_sha" releases/0.5.0/release.meta >/dev/null
