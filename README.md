@@ -7,7 +7,7 @@ This repository intentionally contains only public installation material and aut
 ## Current stable release
 
 ```text
-whmcsmod 0.4.7
+whmcsmod 0.5.0
 ```
 
 When `--version` is omitted, this stable release is selected from the signed `stable.meta` metadata.
@@ -15,19 +15,21 @@ When `--version` is omitted, this stable release is selected from the signed `st
 Authenticated manager artifact SHA-256:
 
 ```text
-ed342648e66f6599ed3ac763f2e39fbbf95d1575dcbc6d5dedc9b7c75149ae38
+16a633dc040a79f0abdc3c085638bc6d58e7c570d5ddd1781a238c912d1143c4
 ```
 
-Version 0.4.6 adds first-class repository onboarding commands (`whmcsmod repo add/list/status/refresh/remove`). Repository onboarding remains separate from WHMCS deployment and does not deploy module files by itself.
+Version 0.4.6 added first-class repository onboarding commands (`whmcsmod repo add/list/status/refresh/remove`). Repository onboarding remains separate from WHMCS deployment and does not deploy module files by itself.
 
-Version 0.4.7 adds authenticated `whmcsmod self-update` and `whmcsmod self-update --check`, using signed release metadata, the pinned release fingerprint, and artifact SHA-256 verification.
+Version 0.4.7 added authenticated `whmcsmod self-update` and `whmcsmod self-update --check`, using signed release metadata, the pinned release fingerprint, and artifact SHA-256 verification.
+
+Version 0.5.0 adds the operational-safety layer: repository audit, authenticated update planning/dry-run, backup list/show/prune with opt-in retention, multi-target doctor/status summaries, and manager version reporting. Automatic backup pruning remains disabled by default.
 
 ## Production install
 
 Use the immutable bootstrap commit below. Do **not** replace the commit SHA with `main`.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/211dfce50e06e5c1eb80bd5c5dc84980459281cf/install.sh \
+curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/367338854158dd593f7a5a66e698d6bfd4afdeb6/install.sh \
   | sudo bash -s -- \
       --target mywhmcs \
       --whmcs-root /absolute/path/to/whmcs
@@ -36,7 +38,7 @@ curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/211dfce5
 If you are already logged in as `root`, use `bash` instead of `sudo bash`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/211dfce50e06e5c1eb80bd5c5dc84980459281cf/install.sh \
+curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/367338854158dd593f7a5a66e698d6bfd4afdeb6/install.sh \
   | bash -s -- \
       --target mywhmcs \
       --whmcs-root /absolute/path/to/whmcs
@@ -48,7 +50,7 @@ Optional overrides are available when auto-detection cannot determine the correc
 --php-bin /absolute/path/to/php
 --composer-bin /absolute/path/to/composer
 --whmcs-run-user USER
---version 0.4.7
+--version 0.5.0
 ```
 
 PHP ambiguity intentionally fails instead of selecting the newest installed PHP.
@@ -76,21 +78,14 @@ stable.meta
 stable.meta.asc
 releases/0.4.1/...
 releases/0.4.2/...
-releases/0.4.3/release.meta
-releases/0.4.3/release.meta.asc
-releases/0.4.3/whmcsmod-0.4.3.tar.gz
-releases/0.4.4/release.meta
-releases/0.4.4/release.meta.asc
-releases/0.4.4/whmcsmod-0.4.4.tar.gz
-releases/0.4.5/release.meta
-releases/0.4.5/release.meta.asc
-releases/0.4.5/whmcsmod-0.4.5.tar.gz
-releases/0.4.6/release.meta
-releases/0.4.6/release.meta.asc
-releases/0.4.6/whmcsmod-0.4.6.tar.gz
-releases/0.4.7/release.meta
-releases/0.4.7/release.meta.asc
-releases/0.4.7/whmcsmod-0.4.7.tar.gz
+releases/0.4.3/...
+releases/0.4.4/...
+releases/0.4.5/...
+releases/0.4.6/...
+releases/0.4.7/...
+releases/0.5.0/release.meta
+releases/0.5.0/release.meta.asc
+releases/0.5.0/whmcsmod-0.5.0.tar.gz
 ```
 
 `stable.meta` points only to a stable release. Prereleases are never selected implicitly.
@@ -104,11 +99,28 @@ whmcsmod doctor
 whmcsmod target list
 ```
 
-Starting with 0.4.7, future manager upgrades can be checked and installed directly:
+Existing installations starting with 0.4.7 can check and install future manager upgrades directly:
 
 ```bash
 whmcsmod self-update --check
 whmcsmod self-update
+```
+
+Useful 0.5.0 operational checks include:
+
+```bash
+whmcsmod version
+whmcsmod status --all
+whmcsmod doctor --all
+whmcsmod repo audit --all
+whmcsmod update --all --dry-run
+whmcsmod backup list --all
+```
+
+Inspect one transaction backup before rollback with:
+
+```bash
+whmcsmod backup show MODULE BACKUP_ID
 ```
 
 The repository also runs continuous distribution verification plus an end-to-end test that executes the exact pinned curl command against an ephemeral fake WHMCS installation and verifies the installed self-update path.
