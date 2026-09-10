@@ -27,7 +27,7 @@ Version 0.4.7 adds authenticated `whmcsmod self-update` and `whmcsmod self-updat
 Use the immutable bootstrap commit below. Do **not** replace the commit SHA with `main`.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/e4d7532c3b82e7c8ce16d1717161986452c56424/install.sh \
+curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/211dfce50e06e5c1eb80bd5c5dc84980459281cf/install.sh \
   | sudo bash -s -- \
       --target mywhmcs \
       --whmcs-root /absolute/path/to/whmcs
@@ -36,7 +36,7 @@ curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/e4d7532c
 If you are already logged in as `root`, use `bash` instead of `sudo bash`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/e4d7532c3b82e7c8ce16d1717161986452c56424/install.sh \
+curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/211dfce50e06e5c1eb80bd5c5dc84980459281cf/install.sh \
   | bash -s -- \
       --target mywhmcs \
       --whmcs-root /absolute/path/to/whmcs
@@ -104,4 +104,11 @@ whmcsmod doctor
 whmcsmod target list
 ```
 
-The repository also runs continuous distribution verification plus an end-to-end test that executes the exact pinned curl command against an ephemeral fake WHMCS installation.
+Starting with 0.4.7, future manager upgrades can be checked and installed directly:
+
+```bash
+whmcsmod self-update --check
+whmcsmod self-update
+```
+
+The repository also runs continuous distribution verification plus an end-to-end test that executes the exact pinned curl command against an ephemeral fake WHMCS installation and verifies the installed self-update path.
