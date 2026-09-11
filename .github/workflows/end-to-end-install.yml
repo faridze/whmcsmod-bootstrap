@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/211dfce50e06e5c1eb80bd5c5dc84980459281cf/install.sh \
+          curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/367338854158dd593f7a5a66e698d6bfd4afdeb6/install.sh \
             | sudo bash -s -- \
                 --target e2e \
                 --whmcs-root /tmp/whmcsmod-e2e-whmcs
@@ -37,8 +37,9 @@ jobs:
           set -euo pipefail
           [[ -x /usr/local/sbin/whmcsmod ]]
           [[ -f /usr/local/lib/whmcsmod/VERSION ]]
-          [[ "$(tr -d '[:space:]' < /usr/local/lib/whmcsmod/VERSION)" == '0.4.7' ]]
+          [[ "$(tr -d '[:space:]' < /usr/local/lib/whmcsmod/VERSION)" == '0.5.0' ]]
           [[ -f /usr/local/lib/whmcsmod/self-update.sh ]]
+          [[ -f /usr/local/lib/whmcsmod/ops.sh ]]
           [[ -f /etc/whmcsmod/keys/release-signing-public.asc ]]
           sudo grep -Fx 'TRUSTED_TAG_SIGNING_FINGERPRINT=9A3FFFFD9AA2CDA1B825A9F90425CF942B02684C' /etc/whmcsmod/config.conf >/dev/null
           sudo grep -Fx 'DEFAULT_TARGET=e2e' /etc/whmcsmod/config.conf >/dev/null
@@ -46,7 +47,23 @@ jobs:
           sudo grep -F 'WHMCS_RUN_USER=nobody' /etc/whmcsmod/targets/e2e.conf >/dev/null
           sudo /usr/local/sbin/whmcsmod doctor
           sudo /usr/local/sbin/whmcsmod target list
-          sudo /usr/local/sbin/whmcsmod self-update --check | tee /tmp/whmcsmod-self-update-check.out
-          grep -F 'Current: 0.4.7' /tmp/whmcsmod-self-update-check.out >/dev/null
-          grep -F 'Latest:  0.4.7' /tmp/whmcsmod-self-update-check.out >/dev/null
+
+          # stable.meta and its detached signature are two mutable raw GitHub files.
+          # Immediately after publication different CDN edges can briefly expose a
+          # mismatched pair. Retry the complete authenticated check; never bypass
+          # signature validation and never trust a failed attempt.
+          : > /tmp/whmcsmod-self-update-check.out
+          ok=0
+          for attempt in 1 2 3; do
+            if sudo /usr/local/sbin/whmcsmod self-update --check > /tmp/whmcsmod-self-update-check.out 2>&1; then
+              ok=1
+              break
+            fi
+            cat /tmp/whmcsmod-self-update-check.out >&2
+            (( attempt < 3 )) && sleep 2
+          done
+          [[ "$ok" -eq 1 ]]
+          cat /tmp/whmcsmod-self-update-check.out
+          grep -F 'Current: 0.5.0' /tmp/whmcsmod-self-update-check.out >/dev/null
+          grep -F 'Latest:  0.5.0' /tmp/whmcsmod-self-update-check.out >/dev/null
           grep -F 'whmcsmod is already up to date.' /tmp/whmcsmod-self-update-check.out >/dev/null
