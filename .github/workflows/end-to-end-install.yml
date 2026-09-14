@@ -37,7 +37,7 @@ jobs:
           set -euo pipefail
           [[ -x /usr/local/sbin/whmcsmod ]]
           [[ -f /usr/local/lib/whmcsmod/VERSION ]]
-          [[ "$(tr -d '[:space:]' < /usr/local/lib/whmcsmod/VERSION)" == '0.5.0' ]]
+          [[ "$(tr -d '[:space:]' < /usr/local/lib/whmcsmod/VERSION)" == '0.6.0' ]]
           [[ -f /usr/local/lib/whmcsmod/self-update.sh ]]
           [[ -f /usr/local/lib/whmcsmod/ops.sh ]]
           [[ -f /etc/whmcsmod/keys/release-signing-public.asc ]]
@@ -64,6 +64,6 @@ jobs:
           done
           [[ "$ok" -eq 1 ]]
           cat /tmp/whmcsmod-self-update-check.out
-          grep -F 'Current: 0.5.0' /tmp/whmcsmod-self-update-check.out >/dev/null
-          grep -F 'Latest:  0.5.0' /tmp/whmcsmod-self-update-check.out >/dev/null
+          grep -F 'Current: 0.6.0' /tmp/whmcsmod-self-update-check.out >/dev/null
+          grep -F 'Latest:  0.6.0' /tmp/whmcsmod-self-update-check.out >/dev/null
           grep -F 'whmcsmod is already up to date.' /tmp/whmcsmod-self-update-check.out >/dev/null
