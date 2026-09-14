@@ -24,15 +24,20 @@ jobs:
 
       - name: Run exact pinned production bootstrap
         shell: bash
+        env:
+          DIST_REF: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
+          distribution_base="https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/$DIST_REF"
           curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/367338854158dd593f7a5a66e698d6bfd4afdeb6/install.sh \
-            | sudo bash -s -- \
+            | sudo env WHMCSMOD_DISTRIBUTION_BASE_URL="$distribution_base" bash -s -- \
                 --target e2e \
                 --whmcs-root /tmp/whmcsmod-e2e-whmcs
 
       - name: Verify installed manager and self-update
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
           [[ -x /usr/local/sbin/whmcsmod ]]
@@ -48,10 +53,10 @@ jobs:
           sudo /usr/local/sbin/whmcsmod doctor
           sudo /usr/local/sbin/whmcsmod target list
 
-          # stable.meta and its detached signature are two mutable raw GitHub files.
-          # Immediately after publication different CDN edges can briefly expose a
-          # mismatched pair. Retry the complete authenticated check; never bypass
-          # signature validation and never trust a failed attempt.
+          # self-update reads stable metadata from public main. During the PR,
+          # public main intentionally still points at the previous stable release;
+          # after merge it must point at this release. Retry complete authenticated
+          # checks only to tolerate transient raw GitHub metadata propagation.
           : > /tmp/whmcsmod-self-update-check.out
           ok=0
           for attempt in 1 2 3; do
@@ -65,5 +70,11 @@ jobs:
           [[ "$ok" -eq 1 ]]
           cat /tmp/whmcsmod-self-update-check.out
           grep -F 'Current: 0.6.0' /tmp/whmcsmod-self-update-check.out >/dev/null
-          grep -F 'Latest:  0.6.0' /tmp/whmcsmod-self-update-check.out >/dev/null
-          grep -F 'whmcsmod is already up to date.' /tmp/whmcsmod-self-update-check.out >/dev/null
+
+          if [[ "$EVENT_NAME" == 'pull_request' ]]; then
+            grep -F 'Latest:  0.5.0' /tmp/whmcsmod-self-update-check.out >/dev/null
+            grep -F 'Installed manager is newer than the published stable release.' /tmp/whmcsmod-self-update-check.out >/dev/null
+          else
+            grep -F 'Latest:  0.6.0' /tmp/whmcsmod-self-update-check.out >/dev/null
+            grep -F 'whmcsmod is already up to date.' /tmp/whmcsmod-self-update-check.out >/dev/null
+          fi
