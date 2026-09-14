@@ -64,11 +64,25 @@ bootstrap_parse_metadata() {
 }
 
 bootstrap_verify_archive_layout() {
-  local archive="$1" actual expected
-  expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/ops.sh\nlib/release.sh\nlib/repo.sh\nlib/self-update.sh\nwhmcsmod'
+  local archive="$1" version="$2" actual expected
+  case "$version" in
+    0.4.6)
+      expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/release.sh\nlib/repo.sh\nwhmcsmod'
+      ;;
+    0.4.7)
+      expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/release.sh\nlib/repo.sh\nlib/self-update.sh\nwhmcsmod'
+      ;;
+    0.5.0|0.6.0)
+      expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/ops.sh\nlib/release.sh\nlib/repo.sh\nlib/self-update.sh\nwhmcsmod'
+      ;;
+    0.7.0)
+      expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/import.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/ops.sh\nlib/release.sh\nlib/repo.sh\nlib/self-update.sh\nwhmcsmod'
+      ;;
+    *) return 1 ;;
+  esac
   actual="$(tar -tzf "$archive" | sed 's#^\./##' | LC_ALL=C sort)" || return 1
   [[ "$actual" == "$expected" ]] || return 1
-  if tar -tvzf "$archive" | awk '$1 ~ /^[lh]/ {found=1} END {exit found ? 0 : 1}'; then
+  if tar -tvzf "$archive" | awk '$1 !~ /^-/ {found=1} END {exit found ? 0 : 1}'; then
     return 1
   fi
 }
@@ -145,7 +159,7 @@ bootstrap_main() {
   bootstrap_download "$artifact_url" "$artifact"
   actual_sha="$(sha256sum "$artifact" | awk '{print tolower($1)}')"
   [[ "$actual_sha" == "$BOOTSTRAP_RELEASE_SHA256" ]] || bootstrap_die "release artifact SHA-256 mismatch"
-  bootstrap_verify_archive_layout "$artifact" || bootstrap_die "release artifact contains an unexpected file layout"
+  bootstrap_verify_archive_layout "$artifact" "$BOOTSTRAP_RELEASE_VERSION" || bootstrap_die "release artifact contains an unexpected or unaudited file layout"
 
   release_dir="$temp/release"
   mkdir -m 0700 "$release_dir"
