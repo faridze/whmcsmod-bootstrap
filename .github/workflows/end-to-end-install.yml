@@ -22,14 +22,14 @@ jobs:
           sudo chown nobody:nogroup /tmp/whmcsmod-e2e-whmcs/init.php
           sudo chmod 0644 /tmp/whmcsmod-e2e-whmcs/init.php
 
-      - name: Run exact pinned production bootstrap
+      - name: Run exact publication bootstrap
         shell: bash
         env:
           DIST_REF: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
           distribution_base="https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/$DIST_REF"
-          curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/367338854158dd593f7a5a66e698d6bfd4afdeb6/install.sh \
+          curl -fsSL "$distribution_base/install.sh" \
             | sudo env WHMCSMOD_DISTRIBUTION_BASE_URL="$distribution_base" bash -s -- \
                 --target e2e \
                 --whmcs-root /tmp/whmcsmod-e2e-whmcs
@@ -42,9 +42,10 @@ jobs:
           set -euo pipefail
           [[ -x /usr/local/sbin/whmcsmod ]]
           [[ -f /usr/local/lib/whmcsmod/VERSION ]]
-          [[ "$(tr -d '[:space:]' < /usr/local/lib/whmcsmod/VERSION)" == '0.6.0' ]]
+          [[ "$(tr -d '[:space:]' < /usr/local/lib/whmcsmod/VERSION)" == '0.7.0' ]]
           [[ -f /usr/local/lib/whmcsmod/self-update.sh ]]
           [[ -f /usr/local/lib/whmcsmod/ops.sh ]]
+          [[ -f /usr/local/lib/whmcsmod/import.sh ]]
           [[ -f /etc/whmcsmod/keys/release-signing-public.asc ]]
           sudo grep -Fx 'TRUSTED_TAG_SIGNING_FINGERPRINT=9A3FFFFD9AA2CDA1B825A9F90425CF942B02684C' /etc/whmcsmod/config.conf >/dev/null
           sudo grep -Fx 'DEFAULT_TARGET=e2e' /etc/whmcsmod/config.conf >/dev/null
@@ -52,11 +53,12 @@ jobs:
           sudo grep -F 'WHMCS_RUN_USER=nobody' /etc/whmcsmod/targets/e2e.conf >/dev/null
           sudo /usr/local/sbin/whmcsmod doctor
           sudo /usr/local/sbin/whmcsmod target list
+          sudo /usr/local/sbin/whmcsmod --help | grep -F 'import scan <module>' >/dev/null
 
           # self-update reads stable metadata from public main. During the PR,
-          # public main intentionally still points at the previous stable release;
-          # after merge it must point at this release. Retry complete authenticated
-          # checks only to tolerate transient raw GitHub metadata propagation.
+          # main intentionally still points at the previous stable release; after
+          # merge it must point at 0.7.0. Retry the complete authenticated check
+          # only to tolerate transient raw GitHub metadata propagation.
           : > /tmp/whmcsmod-self-update-check.out
           ok=0
           for attempt in 1 2 3; do
@@ -69,12 +71,12 @@ jobs:
           done
           [[ "$ok" -eq 1 ]]
           cat /tmp/whmcsmod-self-update-check.out
-          grep -F 'Current: 0.6.0' /tmp/whmcsmod-self-update-check.out >/dev/null
+          grep -F 'Current: 0.7.0' /tmp/whmcsmod-self-update-check.out >/dev/null
 
           if [[ "$EVENT_NAME" == 'pull_request' ]]; then
-            grep -F 'Latest:  0.5.0' /tmp/whmcsmod-self-update-check.out >/dev/null
+            grep -F 'Latest:  0.6.0' /tmp/whmcsmod-self-update-check.out >/dev/null
             grep -F 'Installed manager is newer than the published stable release.' /tmp/whmcsmod-self-update-check.out >/dev/null
           else
-            grep -F 'Latest:  0.6.0' /tmp/whmcsmod-self-update-check.out >/dev/null
+            grep -F 'Latest:  0.7.0' /tmp/whmcsmod-self-update-check.out >/dev/null
             grep -F 'whmcsmod is already up to date.' /tmp/whmcsmod-self-update-check.out >/dev/null
           fi
