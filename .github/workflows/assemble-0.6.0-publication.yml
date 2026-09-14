@@ -1,0 +1,101 @@
+name: Assemble whmcsmod 0.6.0 public publication
+
+on:
+  push:
+    branches:
+      - publish/0.6.0
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout publication branch
+        uses: actions/checkout@v4
+        with:
+          ref: publish/0.6.0
+
+      - name: Download, verify and stage authenticated release
+        shell: bash
+        env:
+          ARTIFACT_URL: https://sdmntprnortheu.oaiusercontent.com/files/00000000-3318-81f4-9cf6-aa55accfdc93/raw?se=2026-09-14T20%3A05%3A13Z&sp=r&sv=2026-02-06&sr=b&scid=b9866835-c9bb-5494-a3c4-7dc6d63afc06&skoid=a4604a88-85e4-4562-b6ab-a5622268de80&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-14T17%3A49%3A41Z&ske=2026-09-15T17%3A49%3A41Z&sks=b&skv=2026-02-06&sig=Y43yYXyuTQh9OcdtimIy/vjC21MfcS/9QiEkuoLskRY%3D
+        run: |
+          set -euo pipefail
+          version='0.6.0'
+          expected_fpr='9A3FFFFD9AA2CDA1B825A9F90425CF942B02684C'
+          expected_sha='a0888c8cd63915c86150ff254be4c5cfdc0380495f7e0d60f1f9eed2db2d56b6'
+          work="$(mktemp -d)"
+          trap 'rm -rf -- "$work"' EXIT
+
+          curl -fsSL --proto '=https' --tlsv1.2 "$ARTIFACT_URL" -o "$work/distribution.zip"
+          unzip -q "$work/distribution.zip" -d "$work/dist"
+          [[ -f "$work/dist/whmcsmod-$version.tar.gz" ]]
+          [[ -f "$work/dist/release.meta" && -f "$work/dist/release.meta.asc" ]]
+          grep -Fx "version=$version" "$work/dist/release.meta" >/dev/null
+          grep -Fx "sha256=$expected_sha" "$work/dist/release.meta" >/dev/null
+          [[ "$(sha256sum "$work/dist/whmcsmod-$version.tar.gz" | awk '{print $1}')" == "$expected_sha" ]]
+
+          ghome="$work/gnupg"; mkdir -m 0700 "$ghome"
+          GNUPGHOME="$ghome" gpg --batch --import release-signing-public.asc >/dev/null 2>&1
+          fpr="$(GNUPGHOME="$ghome" gpg --batch --with-colons --list-keys 2>/dev/null | awk -F: '$1=="pub"{want=1;next} want&&$1=="fpr"{print toupper($10);exit}')"
+          [[ "$fpr" == "$expected_fpr" ]]
+          status="$(GNUPGHOME="$ghome" gpg --batch --status-fd=1 --verify "$work/dist/release.meta.asc" "$work/dist/release.meta" 2>/dev/null)"
+          valid="$(printf '%s\n' "$status" | awk '/^\[GNUPG:\] VALIDSIG /{print toupper($3);exit}')"
+          [[ "$valid" == "$expected_fpr" ]]
+
+          expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/ops.sh\nlib/release.sh\nlib/repo.sh\nlib/self-update.sh\nwhmcsmod'
+          actual="$(tar -tzf "$work/dist/whmcsmod-$version.tar.gz" | sed 's#^\./##' | LC_ALL=C sort)"
+          [[ "$actual" == "$expected" ]]
+          if tar -tvzf "$work/dist/whmcsmod-$version.tar.gz" | awk '$1 !~ /^-/ {found=1} END {exit found ? 0 : 1}'; then
+            echo 'Archive contains a non-regular entry' >&2
+            exit 1
+          fi
+
+          mkdir -p "releases/$version"
+          install -m 0644 "$work/dist/whmcsmod-$version.tar.gz" "releases/$version/whmcsmod-$version.tar.gz"
+          install -m 0644 "$work/dist/release.meta" "releases/$version/release.meta"
+          install -m 0644 "$work/dist/release.meta.asc" "releases/$version/release.meta.asc"
+          install -m 0644 "$work/dist/release.meta" stable.meta
+          install -m 0644 "$work/dist/release.meta.asc" stable.meta.asc
+
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('.github/workflows/verify-distribution.yml')
+          s = p.read_text()
+          needle = """            0.5.0)\n              expected=$'VERSION\\ninstall.sh\\nlib/commands.sh\\nlib/common.sh\\nlib/deploy.sh\\nlib/install-detect.sh\\nlib/manifest.php\\nlib/ops.sh\\nlib/release.sh\\nlib/repo.sh\\nlib/self-update.sh\\nwhmcsmod'\n              ;;\n"""
+          add = needle + """            0.6.0)\n              expected=$'VERSION\\ninstall.sh\\nlib/commands.sh\\nlib/common.sh\\nlib/deploy.sh\\nlib/install-detect.sh\\nlib/manifest.php\\nlib/ops.sh\\nlib/release.sh\\nlib/repo.sh\\nlib/self-update.sh\\nwhmcsmod'\n              ;;\n"""
+          if needle not in s or '            0.6.0)' in s:
+              raise SystemExit('verifier insertion point mismatch')
+          p.write_text(s.replace(needle, add, 1))
+
+          p = Path('.github/workflows/end-to-end-install.yml')
+          s = p.read_text()
+          replacements = {
+              "== '0.5.0'": "== '0.6.0'",
+              "Current: 0.5.0": "Current: 0.6.0",
+              "Latest:  0.5.0": "Latest:  0.6.0",
+          }
+          for old, new in replacements.items():
+              if old not in s:
+                  raise SystemExit(f'E2E marker missing: {old}')
+              s = s.replace(old, new)
+          p.write_text(s)
+          PY
+
+          rm -rf .publish-tmp
+          rm -f .github/workflows/assemble-0.6.0-publication.yml
+
+          ! grep -R -n -E 'BEGIN PGP PRIVATE KEY BLOCK|WHMCSMOD_GPG_PRIVATE_KEY=' --exclude-dir=.git . >/dev/null
+
+      - name: Commit final publication tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'whmcsmod publication bot'
+          git config user.email 'whmcsmod-publication@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'Publish authenticated whmcsmod 0.6.0 distribution'
+          git push origin HEAD:publish/0.6.0
