@@ -7,7 +7,7 @@ This repository intentionally contains only public installation material and aut
 ## Current stable release
 
 ```text
-whmcsmod 0.5.0
+whmcsmod 0.6.0
 ```
 
 When `--version` is omitted, this stable release is selected from the signed `stable.meta` metadata.
@@ -15,18 +15,20 @@ When `--version` is omitted, this stable release is selected from the signed `st
 Authenticated manager artifact SHA-256:
 
 ```text
-16a633dc040a79f0abdc3c085638bc6d58e7c570d5ddd1781a238c912d1143c4
+a0888c8cd63915c86150ff254be4c5cfdc0380495f7e0d60f1f9eed2db2d56b6
 ```
 
 Version 0.4.6 added first-class repository onboarding commands (`whmcsmod repo add/list/status/refresh/remove`). Repository onboarding remains separate from WHMCS deployment and does not deploy module files by itself.
 
 Version 0.4.7 added authenticated `whmcsmod self-update` and `whmcsmod self-update --check`, using signed release metadata, the pinned release fingerprint, and artifact SHA-256 verification.
 
-Version 0.5.0 adds the operational-safety layer: repository audit, authenticated update planning/dry-run, backup list/show/prune with opt-in retention, multi-target doctor/status summaries, and manager version reporting. Automatic backup pruning remains disabled by default.
+Version 0.5.0 added the operational-safety layer: repository audit, authenticated update planning/dry-run, backup list/show/prune with opt-in retention, multi-target doctor/status summaries, and manager version reporting. Automatic backup pruning remains disabled by default.
+
+Version 0.6.0 adds authenticated standalone module packaging. `whmcsmod package` builds a WHMCS-root-relative ZIP from the exact signed module release, emits checksum/provenance sidecars, and vendors production Composer dependencies when declared. It does not modify the configured WHMCS deployment, module state, or backups.
 
 ## Production install
 
-Use the immutable bootstrap commit below. Do **not** replace the commit SHA with `main`.
+Use the immutable bootstrap commit below. Do **not** replace the commit SHA with `main`. The pinned 0.5.0 bootstrap remains compatible with 0.6.0 because the authenticated manager archive file layout is unchanged.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/367338854158dd593f7a5a66e698d6bfd4afdeb6/install.sh \
@@ -50,7 +52,7 @@ Optional overrides are available when auto-detection cannot determine the correc
 --php-bin /absolute/path/to/php
 --composer-bin /absolute/path/to/composer
 --whmcs-run-user USER
---version 0.5.0
+--version 0.6.0
 ```
 
 PHP ambiguity intentionally fails instead of selecting the newest installed PHP.
@@ -83,9 +85,10 @@ releases/0.4.4/...
 releases/0.4.5/...
 releases/0.4.6/...
 releases/0.4.7/...
-releases/0.5.0/release.meta
-releases/0.5.0/release.meta.asc
-releases/0.5.0/whmcsmod-0.5.0.tar.gz
+releases/0.5.0/...
+releases/0.6.0/release.meta
+releases/0.6.0/release.meta.asc
+releases/0.6.0/whmcsmod-0.6.0.tar.gz
 ```
 
 `stable.meta` points only to a stable release. Prereleases are never selected implicitly.
@@ -106,7 +109,7 @@ whmcsmod self-update --check
 whmcsmod self-update
 ```
 
-Useful 0.5.0 operational checks include:
+Useful operational checks include:
 
 ```bash
 whmcsmod version
@@ -115,12 +118,17 @@ whmcsmod doctor --all
 whmcsmod repo audit --all
 whmcsmod update --all --dry-run
 whmcsmod backup list --all
-```
-
-Inspect one transaction backup before rollback with:
-
-```bash
 whmcsmod backup show MODULE BACKUP_ID
 ```
+
+Version 0.6.0 can export a signed module release for manual installation on a WHMCS that does not run whmcsmod:
+
+```bash
+whmcsmod package MODULE
+whmcsmod package MODULE v1.2.3
+whmcsmod package MODULE latest /root/module-packages
+```
+
+The generated ZIP contains only WHMCS-relative deployment files. Manual extraction does not execute whmcsmod database migration or healthcheck hooks.
 
 The repository also runs continuous distribution verification plus an end-to-end test that executes the exact pinned curl command against an ephemeral fake WHMCS installation and verifies the installed self-update path.
