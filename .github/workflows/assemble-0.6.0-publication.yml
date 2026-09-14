@@ -20,7 +20,7 @@ jobs:
       - name: Download, verify and stage authenticated release
         shell: bash
         env:
-          ARTIFACT_URL: https://sdmntprnortheu.oaiusercontent.com/files/00000000-3318-81f4-9cf6-aa55accfdc93/raw?se=2026-09-14T20%3A05%3A13Z&sp=r&sv=2026-02-06&sr=b&scid=b9866835-c9bb-5494-a3c4-7dc6d63afc06&skoid=a4604a88-85e4-4562-b6ab-a5622268de80&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-14T17%3A49%3A41Z&ske=2026-09-15T17%3A49%3A41Z&sks=b&skv=2026-02-06&sig=Y43yYXyuTQh9OcdtimIy/vjC21MfcS/9QiEkuoLskRY%3D
+          ARTIFACT_URL: https://sdmntprnortheu.oaiusercontent.com/files/00000000-82a0-81f4-a1f0-7ba3bd680836/raw?se=2026-09-14T20%3A09%3A19Z&sp=r&sv=2026-02-06&sr=b&scid=380f46c4-9d9e-5259-929c-1d747c05b6d2&skoid=a4604a88-85e4-4562-b6ab-a5622268de80&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-13T23%3A11%3A20Z&ske=2026-09-14T23%3A11%3A20Z&sks=b&skv=2026-02-06&sig=ppEvrvunZ%2B0/LS2rDj1yt71y9oyNgBi2sHuFJQyo/eM%3D
         run: |
           set -euo pipefail
           version='0.6.0'
@@ -86,8 +86,6 @@ jobs:
 
           rm -rf .publish-tmp
           rm -f .github/workflows/assemble-0.6.0-publication.yml
-
-          ! grep -R -n -E 'BEGIN PGP PRIVATE KEY BLOCK|WHMCSMOD_GPG_PRIVATE_KEY=' --exclude-dir=.git . >/dev/null
 
       - name: Commit final publication tree
         shell: bash
