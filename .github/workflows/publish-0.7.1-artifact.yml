@@ -104,3 +104,5 @@ jobs:
           git rm -r .github/publish-0.7.1 .github/workflows/publish-0.7.1-artifact.yml
           git commit -m 'Publish authenticated whmcsmod 0.7.1 artifact'
           git push origin HEAD:publish/bootstrap-0.7.1
+
+# Retry after exact final-tail segmentation.
