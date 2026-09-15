@@ -35,7 +35,7 @@ Version 0.7.1 hardens import and self-update safety. Discovery confidence is ind
 Use the immutable bootstrap commit below. Do **not** replace the commit SHA with `main`.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/a6398e83674df6127aaccd43daf3a56adbab24d8/install.sh \
+curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/81b191f7dd5444a3a200332bb70a07c393a9264d/install.sh \
   | sudo bash -s -- \
       --target mywhmcs \
       --whmcs-root /absolute/path/to/whmcs
@@ -44,7 +44,7 @@ curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/a6398e83
 If you are already logged in as `root`, use `bash` instead of `sudo bash`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/a6398e83674df6127aaccd43daf3a56adbab24d8/install.sh \
+curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/81b191f7dd5444a3a200332bb70a07c393a9264d/install.sh \
   | bash -s -- \
       --target mywhmcs \
       --whmcs-root /absolute/path/to/whmcs
