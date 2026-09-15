@@ -75,7 +75,7 @@ bootstrap_verify_archive_layout() {
     0.5.0|0.6.0)
       expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/ops.sh\nlib/release.sh\nlib/repo.sh\nlib/self-update.sh\nwhmcsmod'
       ;;
-    0.7.0)
+    0.7.0|0.7.1)
       expected=$'VERSION\ninstall.sh\nlib/commands.sh\nlib/common.sh\nlib/deploy.sh\nlib/import.sh\nlib/install-detect.sh\nlib/manifest.php\nlib/ops.sh\nlib/release.sh\nlib/repo.sh\nlib/self-update.sh\nwhmcsmod'
       ;;
     *) return 1 ;;

@@ -7,7 +7,7 @@ This repository intentionally contains only public installation material and aut
 ## Current stable release
 
 ```text
-whmcsmod 0.7.0
+whmcsmod 0.7.1
 ```
 
 When `--version` is omitted, this stable release is selected from the signed `stable.meta` metadata.
@@ -15,7 +15,7 @@ When `--version` is omitted, this stable release is selected from the signed `st
 Authenticated manager artifact SHA-256:
 
 ```text
-644a6cf770c63906f7838dd6bff0601b52321d059370028dea51db80fa3d8511
+3bf811eb6d474b43d5f48dc4e350a9de79abedd9816be62c5e912d872e49ae44
 ```
 
 Version 0.4.6 added first-class repository onboarding commands (`whmcsmod repo add/list/status/refresh/remove`). Repository onboarding remains separate from WHMCS deployment and does not deploy module files by itself.
@@ -26,14 +26,16 @@ Version 0.5.0 added the operational-safety layer: repository audit, authenticate
 
 Version 0.6.0 added authenticated standalone module packaging. `whmcsmod package` builds a WHMCS-root-relative ZIP from the exact signed module release, emits checksum/provenance sidecars, and vendors production Composer dependencies when declared. It does not modify the configured WHMCS deployment, module state, or backups.
 
-Version 0.7.0 adds read-only multi-component import for existing WHMCS module installations. It can discover addon, gateway/callback, server, registrar, hook, cron, asset/template, and other matching module paths; classify source/ionCube/unknown PHP; warn about common secret risks; and create a local reviewable whmcsmod repository without modifying WHMCS, committing, adding a remote, or pushing to GitHub.
+Version 0.7.0 added read-only multi-component import for existing WHMCS module installations. It can discover addon, gateway/callback, server, registrar, hook, cron, asset/template, and other matching module paths; classify source/ionCube/unknown PHP; warn about common secret risks; and create a local reviewable whmcsmod repository without modifying WHMCS, committing, adding a remote, or pushing to GitHub.
+
+Version 0.7.1 hardens import and self-update safety. Discovery confidence is independently classified as `CONFIRMED`, `LIKELY`, or `UNKNOWN`; secret-risk matching covers additional common PHP/config credential forms; self-update authenticates an exact runtime-file allow-list; and additional fail-closed tests cover traversal, symlinks/special files, and existing output destinations.
 
 ## Production install
 
 Use the immutable bootstrap commit below. Do **not** replace the commit SHA with `main`.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/ed44a2bdba852e7bb31e32f945835b542e3c8985/install.sh \
+curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/a6398e83674df6127aaccd43daf3a56adbab24d8/install.sh \
   | sudo bash -s -- \
       --target mywhmcs \
       --whmcs-root /absolute/path/to/whmcs
@@ -42,7 +44,7 @@ curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/ed44a2bd
 If you are already logged in as `root`, use `bash` instead of `sudo bash`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/ed44a2bdba852e7bb31e32f945835b542e3c8985/install.sh \
+curl -fsSL https://raw.githubusercontent.com/faridze/whmcsmod-bootstrap/a6398e83674df6127aaccd43daf3a56adbab24d8/install.sh \
   | bash -s -- \
       --target mywhmcs \
       --whmcs-root /absolute/path/to/whmcs
@@ -54,7 +56,7 @@ Optional overrides are available when auto-detection cannot determine the correc
 --php-bin /absolute/path/to/php
 --composer-bin /absolute/path/to/composer
 --whmcs-run-user USER
---version 0.7.0
+--version 0.7.1
 ```
 
 PHP ambiguity intentionally fails instead of selecting the newest installed PHP.
@@ -89,9 +91,10 @@ releases/0.4.6/...
 releases/0.4.7/...
 releases/0.5.0/...
 releases/0.6.0/...
-releases/0.7.0/release.meta
-releases/0.7.0/release.meta.asc
-releases/0.7.0/whmcsmod-0.7.0.tar.gz
+releases/0.7.0/...
+releases/0.7.1/release.meta
+releases/0.7.1/release.meta.asc
+releases/0.7.1/whmcsmod-0.7.1.tar.gz
 ```
 
 `stable.meta` points only to a stable release. Prereleases are never selected implicitly.
@@ -142,7 +145,7 @@ whmcsmod import plan MODULE
 whmcsmod import create MODULE
 ```
 
-The default import selects confirmed source/assets only. Likely paths, ionCube-encoded PHP, unknown PHP, and files with common secret-risk patterns are skipped unless explicitly enabled. For unusual module-owned locations, add one or more WHMCS-root-relative paths during plan/create:
+The default import selects confirmed source/assets only. `LIKELY` and `UNKNOWN` discovery candidates, ionCube-encoded PHP, unknown PHP content, and files with common secret-risk patterns are skipped unless explicitly enabled. For unusual module-owned locations, add one or more WHMCS-root-relative paths during plan/create:
 
 ```bash
 whmcsmod import plan MODULE --include-path includes/custom/module-helper.php

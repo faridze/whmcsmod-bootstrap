@@ -42,7 +42,7 @@ jobs:
           set -euo pipefail
           [[ -x /usr/local/sbin/whmcsmod ]]
           [[ -f /usr/local/lib/whmcsmod/VERSION ]]
-          [[ "$(tr -d '[:space:]' < /usr/local/lib/whmcsmod/VERSION)" == '0.7.0' ]]
+          [[ "$(tr -d '[:space:]' < /usr/local/lib/whmcsmod/VERSION)" == '0.7.1' ]]
           [[ -f /usr/local/lib/whmcsmod/self-update.sh ]]
           [[ -f /usr/local/lib/whmcsmod/ops.sh ]]
           [[ -f /usr/local/lib/whmcsmod/import.sh ]]
@@ -57,7 +57,7 @@ jobs:
 
           # self-update reads stable metadata from public main. During the PR,
           # main intentionally still points at the previous stable release; after
-          # merge it must point at 0.7.0. Retry the complete authenticated check
+          # merge it must point at 0.7.1. Retry the complete authenticated check
           # only to tolerate transient raw GitHub metadata propagation.
           : > /tmp/whmcsmod-self-update-check.out
           ok=0
@@ -71,12 +71,12 @@ jobs:
           done
           [[ "$ok" -eq 1 ]]
           cat /tmp/whmcsmod-self-update-check.out
-          grep -F 'Current: 0.7.0' /tmp/whmcsmod-self-update-check.out >/dev/null
+          grep -F 'Current: 0.7.1' /tmp/whmcsmod-self-update-check.out >/dev/null
 
           if [[ "$EVENT_NAME" == 'pull_request' ]]; then
-            grep -F 'Latest:  0.6.0' /tmp/whmcsmod-self-update-check.out >/dev/null
+            grep -F 'Latest:  0.7.0' /tmp/whmcsmod-self-update-check.out >/dev/null
             grep -F 'Installed manager is newer than the published stable release.' /tmp/whmcsmod-self-update-check.out >/dev/null
           else
-            grep -F 'Latest:  0.7.0' /tmp/whmcsmod-self-update-check.out >/dev/null
+            grep -F 'Latest:  0.7.1' /tmp/whmcsmod-self-update-check.out >/dev/null
             grep -F 'whmcsmod is already up to date.' /tmp/whmcsmod-self-update-check.out >/dev/null
           fi
