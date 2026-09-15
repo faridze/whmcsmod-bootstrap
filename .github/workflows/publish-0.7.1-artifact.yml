@@ -1,0 +1,97 @@
+name: Publish whmcsmod 0.7.1 artifact
+
+on:
+  push:
+    branches:
+      - publish/bootstrap-0.7.1
+    paths:
+      - .github/workflows/publish-0.7.1-artifact.yml
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout publication branch
+        uses: actions/checkout@v4
+        with:
+          ref: publish/bootstrap-0.7.1
+          fetch-depth: 0
+
+      - name: Rebuild and verify authenticated artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          export LC_ALL=C
+
+          expected_sha='3bf811eb6d474b43d5f48dc4e350a9de79abedd9816be62c5e912d872e49ae44'
+          trusted_fpr='9A3FFFFD9AA2CDA1B825A9F90425CF942B02684C'
+          out='releases/0.7.1/whmcsmod-0.7.1.tar.gz'
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+
+          cat .github/publish-0.7.1/part-* > "$tmp/artifact.b64"
+          base64 --decode "$tmp/artifact.b64" > "$tmp/whmcsmod-0.7.1.tar.gz"
+
+          actual_sha="$(sha256sum "$tmp/whmcsmod-0.7.1.tar.gz" | awk '{print $1}')"
+          test "$actual_sha" = "$expected_sha"
+          grep -Fxq 'version=0.7.1' releases/0.7.1/release.meta
+          grep -Fxq "sha256=$expected_sha" releases/0.7.1/release.meta
+          test "$(wc -l < releases/0.7.1/release.meta)" -eq 2
+          cmp -s releases/0.7.1/release.meta stable.meta
+          cmp -s releases/0.7.1/release.meta.asc stable.meta.asc
+
+          gpg --batch --import release-signing-public.asc
+          actual_fpr="$(gpg --batch --with-colons --fingerprint | awk -F: '$1=="fpr" {print $10; exit}')"
+          test "$actual_fpr" = "$trusted_fpr"
+          status="$(gpg --batch --status-fd=1 --verify releases/0.7.1/release.meta.asc releases/0.7.1/release.meta 2>/dev/null)"
+          printf '%s\n' "$status" | grep -Fq "[GNUPG:] VALIDSIG $trusted_fpr "
+
+          cat > "$tmp/expected-files" <<'EOF'
+          VERSION
+          install.sh
+          lib/commands.sh
+          lib/common.sh
+          lib/deploy.sh
+          lib/import.sh
+          lib/install-detect.sh
+          lib/manifest.php
+          lib/ops.sh
+          lib/release.sh
+          lib/repo.sh
+          lib/self-update.sh
+          whmcsmod
+          EOF
+          tar -tzf "$tmp/whmcsmod-0.7.1.tar.gz" | LC_ALL=C sort > "$tmp/actual-files"
+          LC_ALL=C sort -o "$tmp/expected-files" "$tmp/expected-files"
+          diff -u "$tmp/expected-files" "$tmp/actual-files"
+
+          while IFS= read -r line; do
+            case "${line:0:1}" in
+              -) ;;
+              *) echo "Non-regular archive entry rejected: $line" >&2; exit 1 ;;
+            esac
+          done < <(tar -tvzf "$tmp/whmcsmod-0.7.1.tar.gz")
+
+          test "$(tar -xOzf "$tmp/whmcsmod-0.7.1.tar.gz" VERSION)" = '0.7.1'
+          if tar -xOzf "$tmp/whmcsmod-0.7.1.tar.gz" | grep -a -q 'BEGIN PGP PRIVATE KEY BLOCK'; then
+            echo 'Private signing key material detected in release artifact' >&2
+            exit 1
+          fi
+
+          mkdir -p "$(dirname "$out")"
+          cp "$tmp/whmcsmod-0.7.1.tar.gz" "$out"
+          test "$(sha256sum "$out" | awk '{print $1}')" = "$expected_sha"
+
+      - name: Commit exact artifact and remove staging helpers
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'whmcsmod publication bot'
+          git config user.email 'whmcsmod-publication@users.noreply.github.com'
+          git add releases/0.7.1/whmcsmod-0.7.1.tar.gz
+          git rm -r .github/publish-0.7.1 .github/workflows/publish-0.7.1-artifact.yml
+          git commit -m 'Publish authenticated whmcsmod 0.7.1 artifact'
+          git push origin HEAD:publish/bootstrap-0.7.1
